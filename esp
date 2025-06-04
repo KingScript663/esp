@@ -1,0 +1,115 @@
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local espEnabled = false
+local connections = {}
+
+-- Gỡ ESP khỏi nhân vật
+local function removeESP(char)
+	if not char then return end
+
+	for _, child in ipairs(char:GetChildren()) do
+		if child:IsA("Highlight") then
+			child:Destroy()
+		end
+	end
+
+	for _, part in ipairs(char:GetDescendants()) do
+		if part:IsA("BasePart") then
+			part.Material = Enum.Material.Plastic
+			part.Reflectance = 0
+			-- Optional: đặt lại màu gốc nếu cần
+		end
+	end
+end
+
+-- Áp dụng ESP
+local function applyESP(char)
+	if not char then return end
+
+	-- Xoá cánh
+	for _, accessory in ipairs(char:GetChildren()) do
+		if accessory:IsA("Accessory") and accessory.Name:lower():find("wing") then
+			accessory:Destroy()
+		end
+	end
+
+	-- Highlight trắng
+	local highlight = Instance.new("Highlight")
+	highlight.FillColor = Color3.new(1, 1, 1)
+	highlight.OutlineTransparency = 1
+	highlight.FillTransparency = 0.1
+	highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+	highlight.Parent = char
+
+	-- Đổi màu bộ phận
+	for _, part in ipairs(char:GetDescendants()) do
+		if part:IsA("BasePart") then
+			part.BrickColor = BrickColor.White()
+			part.Material = Enum.Material.Neon
+			part.Reflectance = 0
+		end
+	end
+end
+
+-- Theo dõi 1 player
+local function trackPlayer(player)
+	if player == LocalPlayer then return end
+
+	local function onCharacterAdded(char)
+		if espEnabled then
+			applyESP(char)
+		else
+			removeESP(char)
+		end
+	end
+
+	if player.Character then
+		onCharacterAdded(player.Character)
+	end
+
+	local conn = player.CharacterAdded:Connect(onCharacterAdded)
+	connections[player] = conn
+end
+
+-- Gỡ kết nối và hiệu ứng ESP
+local function disableESP()
+	espEnabled = false
+
+	for _, player in ipairs(Players:GetPlayers()) do
+		if player ~= LocalPlayer and player.Character then
+			removeESP(player.Character)
+		end
+	end
+
+	for player, conn in pairs(connections) do
+		if conn then
+			conn:Disconnect()
+		end
+	end
+
+	connections = {}
+end
+
+-- Bật ESP
+local function enableESP()
+	espEnabled = true
+
+	for _, player in ipairs(Players:GetPlayers()) do
+		trackPlayer(player)
+	end
+
+	connections["__PlayerAdded"] = Players.PlayerAdded:Connect(function(player)
+		trackPlayer(player)
+	end)
+end
+
+-- Chat lệnh
+LocalPlayer.Chatted:Connect(function(msg)
+	msg = msg:lower()
+	if msg == "/espallplayer" then
+		enableESP()
+	elseif msg == "/unesp" then
+		disableESP()
+	end
+end)
