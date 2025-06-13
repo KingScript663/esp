@@ -107,7 +107,7 @@ end
 -- Chat lệnh
 LocalPlayer.Chatted:Connect(function(msg)
 	msg = msg:lower()
-	if msg == "/espallplayer" then
+	if msg == "/esp" then
 		enableESP()
 	elseif msg == "/unesp" then
 		disableESP()
